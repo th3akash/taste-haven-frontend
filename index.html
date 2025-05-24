@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Taste Haven - Login/Signup</title>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-dark: #005005;
+            --light-bg: #f1f8e9;
+            --surface: #ffffff;
+            --text: #212121;
+            --text-secondary: #757575;
+            --divider: #e0e0e0;
+            --radius: 16px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', system-ui, sans-serif;
+        }
+
+        body {
+            background: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .welcome-header {
+            text-align: center;
+            padding: 32px 24px 24px;
+            background: var(--light-bg);
+        }
+
+        .welcome-header .logo {
+            width: 80px;
+            height: 80px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: white;
+            font-size: 2.5rem;
+        }
+
+        .welcome-header h1 {
+            font-size: 1.8rem;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+        }
+
+        .form-toggle {
+            display: flex;
+            background: var(--light-bg);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 16px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .toggle-btn.active {
+            color: var(--primary-dark);
+            background: var(--surface);
+        }
+
+        .toggle-btn.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary);
+        }
+
+        .auth-form {
+            padding: 24px;
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--divider);
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .form-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            font-size: 0.9rem;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="welcome-header">
+            <div class="logo">
+                <ion-icon name="restaurant-outline"></ion-icon>
+            </div>
+            <h1>Welcome to Taste Haven</h1>
+        </div>
+
+        <div class="form-toggle">
+            <button class="toggle-btn active" id="loginTab">Login</button>
+            <button class="toggle-btn" id="signupTab">Sign Up</button>
+        </div>
+
+        <form class="auth-form active" id="loginForm">
+            <div class="form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" class="input-field" placeholder="Enter your email" required>
+                <div class="error-message" id="loginEmailError"></div>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" class="input-field" placeholder="Enter your password"
+                    required>
+                <div class="error-message" id="loginPasswordError"></div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="loginSubmit">
+                <ion-icon name="log-in-outline"></ion-icon>
+                <span class="btn-text">Login</span>
+            </button>
+            <div class="form-footer">
+                <a href="#" id="forgotPassword">Forgot password?</a>
+            </div>
+        </form>
+
+        <form class="auth-form" id="signupForm">
+            <div class="form-group">
+                <label for="signupName">Full Name</label>
+                <input type="text" id="signupName" class="input-field" placeholder="Enter your full name" required>
+                <div class="error-message" id="signupNameError"></div>
+            </div>
+            <div class="form-group">
+                <label for="signupEmail">Email Address</label>
+                <input type="email" id="signupEmail" class="input-field" placeholder="Enter your email" required>
+                <div class="error-message" id="signupEmailError"></div>
+            </div>
+            <div class="form-group">
+                <label for="signupPhone">Phone Number</label>
+                <input type="tel" id="signupPhone" class="input-field" placeholder="Enter your phone number" required>
+                <div class="error-message" id="signupPhoneError"></div>
+            </div>
+            <div class="form-group">
+                <label for="signupPassword">Password</label>
+                <input type="password" id="signupPassword" class="input-field"
+                    placeholder="Create password (min 6 characters)" required minlength="6">
+                <div class="error-message" id="signupPasswordError"></div>
+            </div>
+            <button type="submit" class="submit-btn" id="signupSubmit">
+                <ion-icon name="person-add-outline"></ion-icon>
+                <span class="btn-text">Create Account</span>
+            </button>
+            <div class="form-footer">
+                Already have an account? <a href="#" id="switchToLogin">Login</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const loginTab = document.getElementById('loginTab');
+            const signupTab = document.getElementById('signupTab');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const switchToLogin = document.getElementById('switchToLogin');
+            const forgotPassword = document.getElementById('forgotPassword');
+            const loginSubmit = document.getElementById('loginSubmit');
+            const signupSubmit = document.getElementById('signupSubmit');
+            const signupNameInput = document.getElementById('signupName');
+            const signupEmailInput = document.getElementById('signupEmail');
+            const signupPhoneInput = document.getElementById('signupPhone');
+            const signupPasswordInput = document.getElementById('signupPassword');
+            const loginEmailInput = document.getElementById('loginEmail');
+            const loginPasswordInput = document.getElementById('loginPassword');
+
+            // Firebase variables
+            let firebaseApp;
+            let db;
+            let auth;
+
+            // Initialize Firebase
+            fetch('firebaseConfig.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(config => {
+                    firebaseApp = firebase.initializeApp(config);
+                    db = firebase.firestore();
+                    auth = firebase.auth();
+                })
+                .catch(error => {
+                    console.error('Error loading Firebase config:', error);
+                    alert(
+                        'Could not initialize Firebase. Please check console for errors and ensure firebaseConfig.json is correct and accessible.'
+                    );
+                });
+
+            // Toggle between login/signup forms
+            const switchForm = (showLogin) => {
+                if (showLogin) {
+                    loginTab.classList.add('active');
+                    signupTab.classList.remove('active');
+                    loginForm.classList.add('active');
+                    signupForm.classList.remove('active');
+                } else {
+                    signupTab.classList.add('active');
+                    loginTab.classList.remove('active');
+                    signupForm.classList.add('active');
+                    loginForm.classList.remove('active');
+                }
+            };
+
+            // Show loading state on buttons
+            const setLoading = (button, isLoading) => {
+                const icon = button.querySelector('ion-icon');
+                const text = button.querySelector('.btn-text');
+                let loading = button.querySelector('.loading');
+
+                if (isLoading) {
+                    if (!loading) {
+                        loading = document.createElement('div');
+                        loading.className = 'loading';
+                    }
+                    if (icon) icon.style.display = 'none';
+                    if (text) text.style.display = 'none';
+                    if (!button.contains(loading)) {
+                        button.appendChild(loading);
+                    }
+                    button.disabled = true;
+                } else {
+                    if (loading && button.contains(loading)) {
+                        button.removeChild(loading);
+                    }
+                    if (icon) icon.style.display = 'inline-flex';
+                    if (text) text.style.display = 'inline';
+                    button.disabled = false;
+                }
+            };
+
+            // Show error message
+            const showError = (elementId, message) => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = message;
+                    element.style.display = 'block';
+                }
+            };
+
+            // Hide error message
+            const hideError = (elementId) => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.style.display = 'none';
+                    element.textContent = '';
+                }
+            };
+
+            // Clear all error messages
+            const clearErrors = () => {
+                const errorMessages = document.querySelectorAll('.error-message');
+                errorMessages.forEach(error => {
+                    error.style.display = 'none';
+                    error.textContent = '';
+                });
+            };
+
+            // Email validation function
+            const isValidEmail = (email) => {
+                const re =
+                    /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+                return re.test(String(email).toLowerCase());
+            };
+
+            // Phone number validation
+            const isValidPhoneNumber = (phone) => {
+                const phoneRegex = /^\d{10}$/; // Basic 10-digit number check
+                return phoneRegex.test(phone);
+            };
+
+            // --- Login ---
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearErrors();
+
+                const email = loginEmailInput.value.trim();
+                const password = loginPasswordInput.value.trim();
+
+                if (!email) {
+                    showError('loginEmailError', 'Email is required');
+                    return;
+                }
+                if (!isValidEmail(email)) {
+                    showError('loginEmailError', 'Invalid email format');
+                    return;
+                }
+                if (!password) {
+                    showError('loginPasswordError', 'Password is required');
+                    return;
+                }
+
+                setLoading(loginSubmit, true);
+
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+
+                    // Fetch full user profile from Firestore
+                    const doc = await db.collection("users").doc(user.uid).get();
+                    const userData = doc.data();
+
+                    // Save user data into localStorage
+                    localStorage.setItem("userEmail", user.email);
+                    localStorage.setItem("userName", userData.name || "");
+                    localStorage.setItem("userPhone", userData.phone || "");
+                    localStorage.setItem("userId", user.uid);
+
+                    console.log("Login successful!", userCredential.user);
+                    setLoading(loginSubmit, false);
+                    alert('Login successful!');
+                    window.location.href = 'table.html'; // Redirect to table.html
+
+                } catch (error) {
+                    setLoading(loginSubmit, false);
+                    console.error("Login error:", error);
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+
+                    if (errorCode === 'auth/user-not-found') {
+                        showError('loginEmailError', 'User not found. Please sign up.');
+                    } else if (errorCode === 'auth/wrong-password') {
+                        showError('loginPasswordError', 'Invalid password.');
+                    } else {
+                        showError('loginPasswordError', `Login failed: ${errorMessage}`);
+                    }
+                }
+            });
+
+            // --- Sign Up ---
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearErrors();
+
+                const name = signupNameInput.value.trim();
+                const email = signupEmailInput.value.trim();
+                const phone = signupPhoneInput.value.trim();
+                const password = signupPasswordInput.value.trim();
+
+                if (!name) {
+                    showError('signupNameError', 'Name is required');
+                    return;
+                }
+                if (!email) {
+                    showError('signupEmailError', 'Email is required');
+                    return;
+                }
+                if (!isValidEmail(email)) {
+                    showError('signupEmailError', 'Invalid email format.');
+                    return;
+                }
+                if (!phone) {
+                    showError('signupPhoneError', 'Phone number is required');
+                    return;
+                }
+                if (!isValidPhoneNumber(phone)) {
+                    showError('signupPhoneError', 'Invalid phone number');
+                    return;
+                }
+                if (!password) {
+                    showError('signupPasswordError', 'Password is required');
+                    return;
+                }
+                if (password.length < 6) {
+                    showError('signupPasswordError', 'Password must be at least 6 characters');
+                    return;
+                }
+
+                setLoading(signupSubmit, true);
+
+                try {
+                    // First, check if the phone number is already registered
+                    const phoneQuerySnapshot = await db.collection('users').where('phone', '==', phone).get();
+                    if (!phoneQuerySnapshot.empty) {
+                        setLoading(signupSubmit, false);
+                        showError('signupPhoneError', 'Phone number is already registered.');
+                        return;
+                    }
+                    
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+
+                    await db.collection('users').doc(user.uid).set({
+                        name: name,
+                        email: email,
+                        phone: phone,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    alert('Signup successful! Please go to the Login tab to sign in.');
+                    switchForm(true);
+                    setLoading(signupSubmit, false);
+
+                } catch (error) {
+                    setLoading(signupSubmit, false);
+                    console.error("Signup error:", error);
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+
+                    if (errorCode === 'auth/email-already-in-use') {
+                        showError('signupEmailError', 'This email address is already in use.');
+                    } else if (errorCode === 'auth/invalid-email') {
+                        showError('signupEmailError', 'Invalid email format.');
+                    } else if (errorCode === 'auth/weak-password') {
+                        showError('signupPasswordError',
+                            'Password is too weak. It should be at least 6 characters.');
+                    } else {
+                        showError('signupPasswordError', `Signup failed: ${errorMessage}`);
+                    }
+                }
+            });
+
+            // --- Forgot Password ---
+            forgotPassword.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const email = prompt("Enter the email address associated with your account:");
+                if (email) {
+                    try {
+                        await auth.sendPasswordResetEmail(email);
+                        alert("Password reset email sent! Please check your inbox.");
+                    } catch (error) {
+                        console.error("Error sending password reset email:", error);
+                        alert("Error sending reset email: " + error.message);
+                    }
+                } else {
+                    alert("Email address is required to reset password.");
+                }
+            });
+
+            // Event listeners for form toggles
+            loginTab.addEventListener('click', () => switchForm(true));
+            signupTab.addEventListener('click', () => switchForm(false));
+            switchToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchForm(true);
+            });
+        });
+    </script>
+</body>
+
+</html>

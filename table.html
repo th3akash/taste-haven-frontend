@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Taste Haven - Table Selection</title>
+
+  <!-- Ionicons for SVG icons -->
+  <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #2e7d32;
+      --primary-light: #60ad5e;
+      --primary-dark: #005005;
+      --secondary: #ff8f00;
+      --light-bg: #f1f8e9;
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --text: #212121;
+      --text-secondary: #757575;
+      --divider: #e0e0e0;
+      --radius: 16px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow: 0 4px 6px rgba(0,0,0,0.1);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'Roboto', 'Segoe UI', system-ui, sans-serif;
+    }
+    body, html {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--surface);
+    }
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .header h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin-bottom: 8px;
+    }
+    .header p {
+      font-size: 1rem;
+      color: var(--text-secondary);
+    }
+    .table-selection {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .table-btn {
+      aspect-ratio: 1;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 2px solid var(--divider);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .table-btn.occupied {
+      background: #e0e0e0;
+      color: #9e9e9e;
+      border-color: #e0e0e0;
+      cursor: not-allowed;
+      pointer-events: none;
+      transform: none;
+    }
+    .table-btn:hover:not(.occupied) {
+      border-color: var(--primary-light);
+      transform: translateY(-2px);
+    }
+    .table-btn.selected {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+    }
+    .table-btn .table-icon {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+    }
+    .confirm-btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: var(--primary);
+      color: white;
+      border: none;
+      font-size: 1.1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .confirm-btn:disabled {
+      background: var(--divider);
+      color: var(--text-secondary);
+      cursor: not-allowed;
+    }
+    .confirm-btn:not(:disabled):hover {
+      background: var(--primary-dark);
+      box-shadow: 0 4px 16px rgba(46, 125, 50, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="content">
+      <div class="header">
+        <h1>Availabe Tables</h1>
+        <p>Please Select Your Table</p>
+      </div>
+      
+      <div class="table-selection">
+        <!-- Tables 1–9 -->
+        <button class="table-btn" data-table="1">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 1
+        </button>
+        <button class="table-btn" data-table="2">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 2
+        </button>
+        <button class="table-btn" data-table="3">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 3
+        </button>
+        <button class="table-btn" data-table="4">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 4
+        </button>
+        <button class="table-btn" data-table="5">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 5
+        </button>
+        <button class="table-btn" data-table="6">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 6
+        </button>
+        <button class="table-btn" data-table="7">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 7
+        </button>
+        <button class="table-btn" data-table="8">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 8
+        </button>
+        <button class="table-btn" data-table="9">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 9
+        </button>
+
+        <!-- New Tables 10–15 -->
+        <button class="table-btn" data-table="10">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 10
+        </button>
+        <button class="table-btn" data-table="11">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 11
+        </button>
+        <button class="table-btn" data-table="12">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 12
+        </button>
+        <button class="table-btn" data-table="13">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 13
+        </button>
+        <button class="table-btn" data-table="14">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 14
+        </button>
+        <button class="table-btn" data-table="15">
+          <ion-icon name="restaurant-outline" class="table-icon"></ion-icon>
+          Table 15
+        </button>
+      </div>
+      
+      <button class="confirm-btn" disabled id="confirmBtn">
+        <ion-icon name="checkmark-outline"></ion-icon>
+        Continue
+      </button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const tableButtons = document.querySelectorAll('.table-btn');
+      const confirmBtn = document.getElementById('confirmBtn');
+      let selectedTable = null;
+
+      fetch('firebaseConfig.json')
+        .then(res => res.json())
+        .then(config => {
+          firebase.initializeApp(config);
+          const db = firebase.database();
+          db.ref('occupied_tables').once('value', snap => {
+            const occupied = snap.val() || {};
+            tableButtons.forEach(button => {
+              const id = button.getAttribute('data-table');
+              if (occupied[id]) {
+                button.classList.add('occupied');
+              } else {
+                button.addEventListener('click', () => {
+                  tableButtons.forEach(b => b.classList.remove('selected'));
+                  button.classList.add('selected');
+                  selectedTable = id;
+                  confirmBtn.disabled = false;
+                });
+              }
+            });
+          });
+
+          confirmBtn.addEventListener('click', () => {
+            if (selectedTable) {
+              localStorage.setItem('selectedTable', selectedTable);
+              firebase.database().ref('occupied_tables/' + selectedTable).set(true);
+              window.location.href = 'home.html';
+            }
+          });
+        })
+        .catch(err => console.error('Firebase init error:', err));
+    });
+  </script>
+</body>
+</html>

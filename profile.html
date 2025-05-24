@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Taste Haven - Profile</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <!-- Ionicons for SVG icons -->
+  <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+  <style>
+    :root {
+      --primary: #2e7d32;
+      --primary-light: #60ad5e;
+      --primary-dark: #005005;
+      --secondary: #ff8f00;
+      --light-bg: #f1f8e9;
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --text: #212121;
+      --text-secondary: #757575;
+      --divider: #e0e0e0;
+      --error: #d32f2f;
+      --success: #388e3c;
+      --warning: #ffa000;
+      --radius: 16px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-md: 0 8px 16px rgba(0,0,0,0.1);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'Roboto', 'Segoe UI', system-ui, sans-serif;
+    }
+    body, html {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .container {
+      position: relative;
+      height: 100vh;
+      display: flex; 
+      flex-direction: column;
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--surface);
+    }
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      padding-bottom: 88px; /* for nav */
+      scroll-behavior: smooth;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      opacity: 0;
+      animation: fadeIn 0.5s forwards;
+    }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    
+    /* Header Section */
+    .header-card {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      padding: 24px;
+      border-radius: var(--radius);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .header-card::after {
+      content: '';
+      position: absolute;
+      top: -50px; right: -50px;
+      width: 150px; height: 150px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+    .header-card .greeting h2 { 
+      font-size: 1.5rem; 
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .header-card .greeting p { 
+      opacity: 0.9; 
+      font-weight: 300;
+    }
+    .menu-btn {
+      background: rgba(255,255,255,0.2);
+      border: none; 
+      padding: 10px; 
+      border-radius: 12px;
+      color: #fff; 
+      font-size: 1.2rem;
+      transition: var(--transition);
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .menu-btn:hover { 
+      background: rgba(255,255,255,0.3);
+      transform: rotate(90deg);
+    }
+    
+    /* Button Group */
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    /* Profile Card */
+    .profile-card {
+      background: var(--surface);
+      padding: 24px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      border: 1px solid var(--divider);
+    }
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--light-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 2rem;
+      position: relative;
+    }
+    .profile-avatar ion-icon {
+      position: relative;
+      z-index: 1;
+    }
+    .profile-info h3 {
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+    .profile-info p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    
+    /* Stats Card */
+    .stats-card {
+      display: flex;
+      justify-content: space-between;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 16px;
+      margin-bottom: 24px;
+      border-left: 4px solid var(--primary);
+    }
+    .stat-item {
+      text-align: center;
+      padding: 0 12px;
+    }
+    .stat-item h4 {
+      font-size: 1.5rem;
+      color: var(--primary-dark);
+      margin-bottom: 4px;
+    }
+    .stat-item p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    
+    /* Section Titles */
+    .section-title {
+      margin: 24px 0 16px;
+      color: var(--text);
+      font-size: 1.1rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+    }
+    .section-title ion-icon {
+      margin-right: 8px;
+      color: var(--primary);
+    }
+    
+    /* Order History */
+    .order-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 16px;
+      margin-bottom: 16px;
+      transition: var(--transition);
+      border: 1px solid var(--divider);
+    }
+    .order-card:hover {
+      box-shadow: var(--shadow);
+    }
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--divider);
+    }
+    .order-id {
+      font-weight: 500;
+      color: var(--text);
+    }
+    .order-date {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    .order-status {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .status-pending {
+      background: #fff3e0;
+      color: #e65100;
+    }
+    .status-completed {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .order-details {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .order-items {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .order-total {
+      font-weight: 500;
+      color: var(--primary-dark);
+    }
+    .order-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+    .action-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .action-btn:hover {
+      color: var(--primary-dark);
+    }
+    
+    /* Loyalty Card */
+    .loyalty-card {
+      background: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+      color: #fff;
+      padding: 20px;
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .loyalty-card::after {
+      content: '';
+      position: absolute;
+      top: -50px; right: -50px;
+      width: 150px; height: 150px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+    .loyalty-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .loyalty-title {
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+    .loyalty-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .progress-container {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: #fff;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .loyalty-details {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+    
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed; 
+      bottom: 0; 
+      left: 0; 
+      right: 0;
+      height: 72px; 
+      background: var(--surface);
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+      display: flex; 
+      justify-content: space-around;
+      align-items: center;
+      max-width: 600px;
+      margin: 0 auto;
+      border-top: 1px solid var(--divider);
+      z-index: 10;
+    }
+    .nav-btn {
+      background: none; 
+      border: none;
+      display: flex; 
+      flex-direction: column;
+      align-items: center; 
+      font-size: 0.75rem;
+      color: var(--text-secondary); 
+      cursor: pointer;
+      transition: var(--transition);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+    }
+    .nav-btn ion-icon { 
+      font-size: 1.5rem; 
+      margin-bottom: 4px;
+    }
+    .nav-btn.active { 
+      color: var(--primary); 
+      transform: translateY(-4px);
+    }
+    .nav-btn.active ion-icon {
+      transform: scale(1.1);
+    }
+    .nav-btn:not(.active):hover {
+      color: var(--primary-light);
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 480px) {
+      .content {
+        padding: 16px;
+        padding-bottom: 72px;
+      }
+      .header-card {
+        padding: 20px;
+      }
+      .profile-card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="content">
+      <div class="header-card fade-in">
+        <div class="greeting">
+          <h2 id="welcome-message">My Profile</h2>
+          <p>Your account details and order history</p>
+        </div>
+        <div class="btn-group">
+          <button class="menu-btn" id="logout-btn" title="Logout">
+            <ion-icon name="log-out-outline"></ion-icon>
+          </button>
+          <button class="menu-btn">
+            <ion-icon name="menu-outline"></ion-icon>
+          </button>
+        </div>
+      </div>
+      
+      <div class="profile-card fade-in delay-1">
+        <div class="profile-avatar">
+          <ion-icon name="person-outline"></ion-icon>
+        </div>
+        <div class="profile-info">
+          <h3 id="profile-name">Loading...</h3>
+          <p id="profile-email">user@example.com</p>
+        </div>
+      </div>
+      
+      <div class="stats-card fade-in delay-1">
+        <div class="stat-item">
+          <h4 id="total-orders">0</h4>
+          <p>Total Orders</p>
+        </div>
+        <div class="stat-item">
+          <h4 id="loyalty-points">0</h4>
+          <p>Loyalty Points</p>
+        </div>
+        <div class="stat-item">
+          <h4 id="referral-count">0</h4>
+          <p>Referrals</p>
+        </div>
+      </div>
+      
+      <div class="loyalty-card fade-in delay-2" id="loyalty-card">
+        <div class="loyalty-header">
+          <div class="loyalty-title">Taste Haven Rewards</div>
+          <div class="loyalty-badge" id="loyalty-tier">Silver</div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar" id="loyalty-progress" style="width: 30%"></div>
+        </div>
+        <div class="loyalty-details">
+          <span id="current-points">150 points</span>
+          <span id="next-tier">300 points to Gold</span>
+        </div>
+      </div>
+      
+      <h3 class="section-title fade-in delay-2">
+        <ion-icon name="receipt-outline"></ion-icon>
+        Order History
+      </h3>
+      
+      <div id="order-history">
+        <!-- Order history will be populated here -->
+        <div class="order-card fade-in delay-3">
+          <div class="order-header">
+            <div>
+              <div class="order-id">Loading orders...</div>
+              <div class="order-date">Just a moment</div>
+            </div>
+            <div class="order-status status-pending">Loading</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <nav class="bottom-nav">
+      <button class="nav-btn" onclick="window.location.href='home.html'">
+        <ion-icon name="home-outline"></ion-icon>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn" onclick="window.location.href='menu.html'">
+        <ion-icon name="restaurant-outline"></ion-icon>
+        <span>Menu</span>
+      </button>
+      <button class="nav-btn" onclick="window.location.href='cart.html'">
+        <ion-icon name="cart-outline"></ion-icon>
+        <span>Cart</span>
+      </button>
+      <button class="nav-btn active">
+        <ion-icon name="person-outline"></ion-icon>
+        <span>Profile</span>
+      </button>
+    </nav>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Initialize Firebase
+      let firebaseConfig = {};
+      try {
+        const response = await fetch('firebaseConfig.json');
+        firebaseConfig = await response.json();
+        firebase.initializeApp(firebaseConfig);
+      } catch (error) {
+        console.error('Error loading Firebase config:', error);
+        alert('Failed to initialize the app. Please try again later.');
+        return;
+      }
+
+      // Check if user is logged in
+      const userEmail = localStorage.getItem('userEmail');
+      if (!userEmail) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Update profile information
+      document.getElementById('profile-email').textContent = userEmail;
+      document.getElementById('profile-name').textContent = userEmail.split('@')[0];
+      
+      // Load user data from Firebase
+      loadUserData(userEmail);
+      
+      // Load order history
+      loadOrderHistory(userEmail);
+      
+      // Load loyalty data
+      loadLoyaltyData(userEmail);
+      
+      // Add logout button event listener
+      document.getElementById('logout-btn').addEventListener('click', logoutUser);
+    });
+
+    function logoutUser() {
+      try {
+        // Clear local storage
+        localStorage.removeItem('userEmail');
+        
+        // Sign out from Firebase if initialized
+        if (firebase.apps.length) {
+          firebase.auth().signOut();
+        }
+        
+        // Redirect to login page
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('Error during logout:', error);
+        alert('There was an error during logout. Please try again.');
+      }
+    }
+
+    async function loadUserData(userEmail) {
+      try {
+        // In a real app, you might have a 'users' collection in Firebase
+        // For now, we'll just use the email from localStorage
+        console.log('Loading user data for:', userEmail);
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    }
+
+    async function loadOrderHistory(userEmail) {
+      try {
+        const snapshot = await firebase.database().ref('orders/')
+          .orderByChild('user')
+          .equalTo(userEmail)
+          .once('value');
+        
+        const orders = snapshot.val() || {};
+        const orderHistory = document.getElementById('order-history');
+        orderHistory.innerHTML = '';
+        
+        if (Object.keys(orders).length === 0) {
+          orderHistory.innerHTML = `
+            <div class="order-card fade-in delay-3">
+              <div class="order-header">
+                <div>
+                  <div class="order-id">No orders yet</div>
+                  <div class="order-date">Start ordering to see your history</div>
+                </div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+        
+        // Convert to array and sort by timestamp (newest first)
+        const ordersArray = Object.entries(orders).map(([id, data]) => ({ id, ...data }));
+        ordersArray.sort((a, b) => b.timestamp - a.timestamp);
+        
+        // Display up to 5 most recent orders
+        ordersArray.slice(0, 5).forEach((order, index) => {
+          const orderDate = new Date(order.timestamp);
+          const orderCard = document.createElement('div');
+          orderCard.className = `order-card fade-in delay-${3 + (index * 0.1)}`;
+          
+          // Calculate total if not already stored
+          const orderTotal = order.total || order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+          
+          orderCard.innerHTML = `
+            <div class="order-header">
+              <div>
+                <div class="order-id">Order #${order.id.substring(0, 8)}</div>
+                <div class="order-date">${orderDate.toLocaleDateString()} • ${orderDate.toLocaleTimeString()}</div>
+              </div>
+              <div class="order-status ${order.status === 'completed' ? 'status-completed' : 'status-pending'}">
+                ${order.status}
+              </div>
+            </div>
+            <div class="order-details">
+              <div class="order-items">
+                ${order.items.length} item${order.items.length > 1 ? 's' : ''} • Table ${order.table}
+              </div>
+              <div class="order-total">₹${orderTotal.toFixed(2)}</div>
+            </div>
+            <div class="order-actions">
+              <button class="action-btn" onclick="viewOrderDetails('${order.id}')">
+                <ion-icon name="eye-outline"></ion-icon>
+                View Details
+              </button>
+            </div>
+          `;
+          
+          orderHistory.appendChild(orderCard);
+        });
+        
+        // Update total orders count
+        document.getElementById('total-orders').textContent = ordersArray.length;
+      } catch (error) {
+        console.error('Error loading order history:', error);
+        document.getElementById('order-history').innerHTML = `
+          <div class="order-card fade-in delay-3">
+            <div class="order-header">
+              <div>
+                <div class="order-id">Error loading orders</div>
+                <div class="order-date">Please try again later</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    async function loadLoyaltyData(userEmail) {
+      try {
+        // In a real app, you would fetch this from 'loyalty/{userEmail}' in Firebase
+        // For demo purposes, we'll use mock data
+        const loyaltyData = {
+          points: 150,
+          tier: 'Silver',
+          nextTier: 'Gold',
+          pointsNeeded: 150
+        };
+        
+        document.getElementById('loyalty-points').textContent = loyaltyData.points;
+        document.getElementById('loyalty-tier').textContent = loyaltyData.tier;
+        document.getElementById('current-points').textContent = `${loyaltyData.points} points`;
+        document.getElementById('next-tier').textContent = `${loyaltyData.pointsNeeded} points to ${loyaltyData.nextTier}`;
+        
+        // Calculate progress percentage (max 100%)
+        const progressPercent = Math.min((loyaltyData.points / (loyaltyData.points + loyaltyData.pointsNeeded)) * 100, 100);
+        document.getElementById('loyalty-progress').style.width = `${progressPercent}%`;
+      } catch (error) {
+        console.error('Error loading loyalty data:', error);
+      }
+    }
+
+    async function loadReferralData(userEmail) {
+      try {
+        // In a real app, you would fetch this from 'referrals/{userEmail}' in Firebase
+        // For demo purposes, we'll use mock data
+        const referralCount = 3;
+        document.getElementById('referral-count').textContent = referralCount;
+      } catch (error) {
+        console.error('Error loading referral data:', error);
+      }
+    }
+
+    function viewOrderDetails(orderId) {
+      // In a real app, you might show a modal or navigate to an order details page
+      alert(`Viewing details for order: ${orderId}`);
+      // window.location.href = `order.html?id=${orderId}`;
+    }
+  </script>
+</body>
+</html>

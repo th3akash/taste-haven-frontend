@@ -1,0 +1,11 @@
+{
+  "apiKey": "AIzaSyDRjRUwS1AhTzOt6SHAl75lE9k3prHWHpA",
+  "authDomain": "th3-restaurant.firebaseapp.com",
+  "databaseURL" : "https://th3-restaurant-default-rtdb.asia-southeast1.firebasedatabase.app",
+  "projectId": "th3-restaurant",
+  "storageBucket": "th3-restaurant.firebasestorage.app",
+  "messagingSenderId": "949086230815",
+  "appId": "1:949086230815:web:a32da4415cb70850c0b82a",
+  "measurementId": "G-F0LXFVHGGG"
+  
+}
