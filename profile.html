@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <!-- Ionicons for SVG icons -->
   <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
@@ -512,7 +513,7 @@
       // Check if user is logged in
       const userEmail = localStorage.getItem('userEmail');
       if (!userEmail) {
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
         return;
       }
 
@@ -521,13 +522,27 @@
       document.getElementById('profile-name').textContent = userEmail.split('@')[0];
       
       // Load user data from Firebase
-      loadUserData(userEmail);
-      
-      // Load order history
-      loadOrderHistory(userEmail);
-      
-      // Load loyalty data
-      loadLoyaltyData(userEmail);
+    // Load user data from Firebase
+loadUserData(userEmail);
+
+// Get userId (fallback if not in localStorage)
+let userId = localStorage.getItem('userId');
+if (!userId && firebase.auth().currentUser) {
+  userId = firebase.auth().currentUser.uid;
+  localStorage.setItem('userId', userId);
+}
+if (!userId) {
+  console.warn("User ID missing. Cannot load orders or points.");
+  return;
+}
+
+// Load order history and referrals
+loadOrderHistoryLive(userEmail, userId);
+loadReferralData(userEmail);
+
+
+
+
       
       // Add logout button event listener
       document.getElementById('logout-btn').addEventListener('click', logoutUser);
@@ -544,7 +559,7 @@
         }
         
         // Redirect to login page
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
       } catch (error) {
         console.error('Error during logout:', error);
         alert('There was an error during logout. Please try again.');
@@ -560,112 +575,76 @@
         console.error('Error loading user data:', error);
       }
     }
+    async function loadOrderHistoryLive(userEmail, userId) {
 
-    async function loadOrderHistory(userEmail) {
-      try {
-        const snapshot = await firebase.database().ref('orders/')
-          .orderByChild('user')
-          .equalTo(userEmail)
-          .once('value');
-        
-        const orders = snapshot.val() || {};
-        const orderHistory = document.getElementById('order-history');
-        orderHistory.innerHTML = '';
-        
-        if (Object.keys(orders).length === 0) {
-          orderHistory.innerHTML = `
-            <div class="order-card fade-in delay-3">
-              <div class="order-header">
-                <div>
-                  <div class="order-id">No orders yet</div>
-                  <div class="order-date">Start ordering to see your history</div>
-                </div>
-              </div>
-            </div>
-          `;
-          return;
-        }
-        
-        // Convert to array and sort by timestamp (newest first)
-        const ordersArray = Object.entries(orders).map(([id, data]) => ({ id, ...data }));
-        ordersArray.sort((a, b) => b.timestamp - a.timestamp);
-        
-        // Display up to 5 most recent orders
-        ordersArray.slice(0, 5).forEach((order, index) => {
-          const orderDate = new Date(order.timestamp);
-          const orderCard = document.createElement('div');
-          orderCard.className = `order-card fade-in delay-${3 + (index * 0.1)}`;
-          
-          // Calculate total if not already stored
-          const orderTotal = order.total || order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-          
-          orderCard.innerHTML = `
-            <div class="order-header">
-              <div>
-                <div class="order-id">Order #${order.id.substring(0, 8)}</div>
-                <div class="order-date">${orderDate.toLocaleDateString()} • ${orderDate.toLocaleTimeString()}</div>
-              </div>
-              <div class="order-status ${order.status === 'completed' ? 'status-completed' : 'status-pending'}">
-                ${order.status}
-              </div>
-            </div>
-            <div class="order-details">
-              <div class="order-items">
-                ${order.items.length} item${order.items.length > 1 ? 's' : ''} • Table ${order.table}
-              </div>
-              <div class="order-total">₹${orderTotal.toFixed(2)}</div>
-            </div>
-            <div class="order-actions">
-              <button class="action-btn" onclick="viewOrderDetails('${order.id}')">
-                <ion-icon name="eye-outline"></ion-icon>
-                View Details
-              </button>
-            </div>
-          `;
-          
-          orderHistory.appendChild(orderCard);
-        });
-        
-        // Update total orders count
-        document.getElementById('total-orders').textContent = ordersArray.length;
-      } catch (error) {
-        console.error('Error loading order history:', error);
-        document.getElementById('order-history').innerHTML = `
-          <div class="order-card fade-in delay-3">
-            <div class="order-header">
-              <div>
-                <div class="order-id">Error loading orders</div>
-                <div class="order-date">Please try again later</div>
-              </div>
-            </div>
+      if (!userId) {
+  console.warn("User ID not available inside order loader.");
+  return;
+}
+
+
+  const orderRef = firebase.database().ref('orders/');
+  orderRef.on('value', async (snapshot) => {
+    const orders = snapshot.val() || {};
+    const filtered = Object.entries(orders)
+      .filter(([_, order]) => order.user === userEmail);
+    
+    const orderHistory = document.getElementById('order-history');
+    orderHistory.innerHTML = '';
+
+    let totalPoints = 0;
+
+    filtered.reverse().forEach(([id, order], index) => {
+      const orderDate = new Date(order.timestamp);
+      const orderTotal = order.total || order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+      const card = document.createElement('div');
+      card.className = 'order-card fade-in';
+      card.innerHTML = `
+        <div class="order-header">
+          <div>
+            <div class="order-id">Order #${id.slice(0, 8)}</div>
+            <div class="order-date">${orderDate.toLocaleDateString()} • ${orderDate.toLocaleTimeString()}</div>
           </div>
-        `;
-      }
-    }
+          <div class="order-status ${order.status === 'completed' ? 'status-completed' : 'status-pending'}">${order.status}</div>
+        </div>
+        <div class="order-details">
+          <div class="order-items">${order.items.length} item(s) • Table ${order.table}</div>
+          <div class="order-total">₹${orderTotal.toFixed(2)}</div>
+        </div>
+      `;
 
-    async function loadLoyaltyData(userEmail) {
-      try {
-        // In a real app, you would fetch this from 'loyalty/{userEmail}' in Firebase
-        // For demo purposes, we'll use mock data
-        const loyaltyData = {
-          points: 150,
-          tier: 'Silver',
-          nextTier: 'Gold',
-          pointsNeeded: 150
-        };
-        
-        document.getElementById('loyalty-points').textContent = loyaltyData.points;
-        document.getElementById('loyalty-tier').textContent = loyaltyData.tier;
-        document.getElementById('current-points').textContent = `${loyaltyData.points} points`;
-        document.getElementById('next-tier').textContent = `${loyaltyData.pointsNeeded} points to ${loyaltyData.nextTier}`;
-        
-        // Calculate progress percentage (max 100%)
-        const progressPercent = Math.min((loyaltyData.points / (loyaltyData.points + loyaltyData.pointsNeeded)) * 100, 100);
-        document.getElementById('loyalty-progress').style.width = `${progressPercent}%`;
-      } catch (error) {
-        console.error('Error loading loyalty data:', error);
+      orderHistory.appendChild(card);
+
+      // Loyalty points calculation
+      if (order.status === 'completed') {
+        totalPoints += orderTotal <= 500 ? 5 : 10;
       }
-    }
+    });
+
+    // Save to Firestore
+    await firebase.firestore().collection("users").doc(userId).update({
+      points: totalPoints
+    });
+
+    updateLoyaltyDisplay(totalPoints);
+    document.getElementById('total-orders').textContent = filtered.length;
+  });
+}
+
+function updateLoyaltyDisplay(points) {
+  const tier = points >= 500 ? "Gold" : points >= 200 ? "Silver" : "Bronze";
+  const nextTier = tier === "Bronze" ? "Silver" : tier === "Silver" ? "Gold" : "Platinum";
+  const needed = tier === "Bronze" ? 200 - points : tier === "Silver" ? 500 - points : 0;
+  const progress = Math.min((points / (points + needed)) * 100, 100);
+
+  document.getElementById('loyalty-points').textContent = points;
+  document.getElementById('loyalty-tier').textContent = tier;
+  document.getElementById('current-points').textContent = `${points} points`;
+  document.getElementById('next-tier').textContent = `${needed} points to ${nextTier}`;
+  document.getElementById('loyalty-progress').style.width = `${progress}%`;
+}
+
 
     async function loadReferralData(userEmail) {
       try {
