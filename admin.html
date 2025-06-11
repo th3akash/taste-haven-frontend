@@ -247,6 +247,14 @@
                 </a>
                 <a href="#" class="sidebar-item flex items-center px-6 py-3 hover:bg-gray-700 transition duration-150" data-tab="analytics">
                     <ion-icon name="analytics-outline" class="mr-3 text-lg text-gray-400"></ion-icon> Analytics
+                  </a>
+                  
+                  <!-- MODIFIED LINE HERE -->
+                  <a href="inventory.html?from=admin" class="sidebar-item flex items-center px-6 py-3 hover:bg-gray-700 transition duration-150" target="tasteHavenInventoryWindow">
+                    <ion-icon name="cube-outline" class="mr-3 text-lg text-gray-400"></ion-icon> Inventory
+                  </a>
+                  
+                       
                 </a>
                  <a href="#" id="adminLogoutBtn" class="sidebar-item flex items-center px-6 py-3 hover:bg-red-600 transition duration-150 mt-auto border-t border-gray-700">
                     <ion-icon name="log-out-outline" class="mr-3 text-lg text-gray-400"></ion-icon> Logout
@@ -765,6 +773,7 @@
                 document.getElementById('order-details-modal').classList.remove('open');
             });
             
+            
             const adminLogoutButton = document.getElementById('adminLogoutBtn');
             if (adminLogoutButton) { // Ensure button exists
                 adminLogoutButton.removeEventListener('click', handleAdminLogout); // Remove if already attached
@@ -805,12 +814,38 @@
             const contentSections = document.querySelectorAll('.content-section');
 
             sidebarItems.forEach(item => {
-                item.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (item.id === 'adminLogoutBtn') return; // Logout is handled separately
+    item.addEventListener('click', (e) => {
+        const href = item.getAttribute("href");
+        // If the link has an href that doesn't start with '#' (i.e., it's an external link like inventory.html)
+        // and it has a target attribute (like target="tasteHavenInventoryWindow"), let the browser handle it.
+        if (href && !href.startsWith("#") && item.hasAttribute("target")) {
+            // For links with a target (like inventory), we don't prevent default or manage tabs here.
+            // The browser will open it in the targeted window/tab.
+            // We also don't want to mark it as 'active' in the sidebar because it's opening externally.
+             // We also don't want to mark it as 'active' or change sections for external links
+            if (item.getAttribute("target") === "tasteHavenInventoryWindow") {
+                 // Optionally, you could remove 'active' from other items if you want,
+                 // but it might be better to leave the current admin tab highlighted.
+                return; 
+            }
+        } else if (href && href.startsWith("#") || !href) { // For internal navigation or items without href
+            e.preventDefault();
+        }
+
+
+        if (item.id === 'adminLogoutBtn') return; // Logout is handled separately
+
+
                     const targetTab = item.dataset.tab;
-                    
-                    sidebarItems.forEach(i => i.classList.remove('active', 'bg-th-primary', 'text-white'));
+                     if (!targetTab) return; // If it's the inventory link without a data-tab, skip section switching
+
+                    sidebarItems.forEach(i => {
+                         // Don't remove active from the inventory link if it was clicked and opened externally
+                        if (i.getAttribute("target") !== "tasteHavenInventoryWindow") {
+                           i.classList.remove('active', 'bg-th-primary', 'text-white');
+                        }
+                    });
+
                     item.classList.add('active', 'bg-th-primary', 'text-white');
                     
                     contentSections.forEach(section => section.classList.add('hidden'));
