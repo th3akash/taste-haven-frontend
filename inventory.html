@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Inventory Management</title>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --accent: #fd79a8;
+            --dark: #2d3436;
+            --light: #f5f6fa;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #d63031;
+            --info: #0984e3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px 0;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+            transform-style: preserve-3d;
+            transform: perspective(1000px) rotateY(0deg);
+            transition: transform 0.5s ease, width 0.3s ease; /* Added width transition */
+        }
+
+        .sidebar:hover {
+            /* transform: perspective(1000px) rotateY(-5deg); */ /* Optional: can be distracting with width change */
+        }
+
+        .logo {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 30px;
+            white-space: nowrap; /* Prevent text wrapping when sidebar is collapsed */
+            overflow: hidden; /* Hide text that overflows */
+        }
+
+        .logo i {
+            margin-right: 5px; /* Adjust if needed when text is visible */
+        }
+
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 10px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s;
+            transform: translateZ(0);
+            white-space: nowrap; /* Prevent text wrapping */
+            overflow: hidden; /* Hide text that overflows */
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateZ(20px);
+        }
+
+        .nav-link i {
+            margin-right: 10px;
+            font-size: 18px;
+            min-width: 20px; /* Ensure icon alignment when text is hidden */
+        }
+
+        .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+            transform-style: preserve-3d;
+            transition: margin-left 0.3s ease; /* Added transition for margin */
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            transform: translateZ(0);
+            transition: transform 0.3s;
+        }
+         .header > div:first-child { /* Container for back button and title */
+            display: flex;
+            align-items: center;
+        }
+
+        .back-button {
+            text-decoration: none;
+            color: var(--dark);
+            margin-right: 15px;
+            font-size: 24px; /* Match page-title size */
+            line-height: 1; /* Align with title */
+            cursor: pointer;
+            display: inline-flex; /* For vertical alignment if needed */
+            align-items: center;
+        }
+        .back-button:hover {
+            color: var(--primary);
+        }
+
+
+        .header:hover {
+            transform: translateZ(10px);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+        }
+
+        /* Dashboard Cards */
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            transform-style: preserve-3d;
+            transform: translateZ(0);
+        }
+
+        .card:hover {
+            transform: translateZ(10px) translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .card-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .card-footer {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Inventory Tables & Filters */
+        .inventory-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            transform-style: preserve-3d;
+            transform: translateZ(0);
+            transition: transform 0.3s;
+            overflow-x: auto; /* For responsive tables */
+        }
+
+        .inventory-section:hover {
+            transform: translateZ(5px);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* Allow wrapping for smaller screens */
+        }
+        .section-header > div:first-child { /* Section title */
+            margin-right: 10px; /* Space between title and button */
+            margin-bottom: 10px; /* Space if button wraps */
+        }
+        
+        .filters-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .filters-container .form-group {
+            margin-bottom: 0;
+        }
+        .filters-container .form-control, .filters-container .select-control {
+            min-width: 180px;
+        }
+
+
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex; /* For icon alignment */
+            align-items: center; /* For icon alignment */
+            gap: 5px; /* Space between icon and text */
+        }
+        .btn i {
+            font-size: 0.9em; /* Slightly smaller icon in button */
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.9em;
+        }
+
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #5649d1;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #00a884;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+
+        .btn-warning:hover {
+            background-color: #e6b949;
+            transform: translateY(-2px);
+        }
+        .btn-info {
+            background-color: var(--info);
+            color: white;
+        }
+        .btn-info:hover {
+            background-color: #0773c4;
+            transform: translateY(-2px);
+        }
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px; /* Minimum width for tables to encourage horizontal scroll instead of breaking layout */
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap; /* Prevent text wrapping in cells initially */
+        }
+        td {
+             white-space: normal; /* Allow wrapping for longer content in data cells */
+        }
+        td:last-child { /* Actions column */
+            white-space: nowrap;
+        }
+
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        tr:hover {
+            background-color: #f1f3f5; /* Slightly darker hover for rows */
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success { background-color: #d4edda; color: #155724; }
+        .badge-warning { background-color: #fff3cd; color: #856404; }
+        .badge-danger { background-color: #f8d7da; color: #721c24; }
+        .badge-info { background-color: #d1ecf1; color: #0c5460; }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateY(-20px) scale(0.95);
+            transition: transform 0.3s, opacity 0.3s;
+            transform-style: preserve-3d;
+            /* perspective: 1000px; */ /* Can be removed if not using 3D transforms here */
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px; /* Larger close button */
+            cursor: pointer;
+            color: #666;
+            padding: 5px; /* Easier to click */
+            line-height: 1;
+        }
+        .close-btn:hover {
+            color: var(--dark);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-control, .select-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .select-control {
+             background-color: white; /* Ensure select has background */
+        }
+
+
+        .form-control:focus, .select-control:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Recipe Ingredients */
+        .ingredient-list {
+            margin-top: 10px;
+        }
+
+        .ingredient-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .ingredient-item select, .ingredient-item input {
+            flex: 1;
+        }
+        .ingredient-item .form-control { /* Ensure inputs in ingredient item are full width */
+            width: auto; /* Override general form-control width */
+        }
+
+
+        .remove-ingredient {
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 20px;
+            padding: 5px; /* Easier to click */
+        }
+        .remove-ingredient:hover {
+            color: #a02020;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) { /* Adjusted breakpoint */
+            .sidebar {
+                width: 70px;
+                overflow: hidden;
+            }
+            .sidebar:hover {
+                width: 250px;
+                transform: perspective(1000px) rotateY(0deg); /* Keep original hover transform */
+            }
+            .sidebar .nav-link span, .sidebar .logo span {
+                display: none;
+            }
+            .sidebar:hover .nav-link span, .sidebar:hover .logo span {
+                display: inline;
+            }
+            .sidebar .logo i {
+                 margin-right: 0; /* Remove margin when text is hidden */
+            }
+            .sidebar:hover .logo i {
+                margin-right: 5px; /* Restore margin when text is visible */
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+            .sidebar:hover ~ .main-content {
+                margin-left: 250px; /* Ensure this matches expanded sidebar width */
+            }
+        }
+        @media (max-width: 768px) {
+             .filters-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+             .filters-container .form-group {
+                width: 100%;
+            }
+        }
+        @media (max-width: 576px) {
+            .dashboard-cards {
+                grid-template-columns: 1fr; /* Single column on very small screens */
+            }
+            .page-title {
+                font-size: 20px;
+            }
+            .user-info span {
+                display: none; /* Hide username on very small screens */
+            }
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .section-header .btn {
+                margin-top: 10px; /* Space button from title when wrapped */
+            }
+            .modal-content {
+                width: 95%;
+                max-height: 95vh;
+            }
+        }
+
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
+        }
+
+        .tab {
+            padding: 10px 15px; /* Slightly less padding for tabs */
+            cursor: pointer;
+            border-bottom: 3px solid transparent; /* Thicker active border */
+            transition: all 0.3s;
+            margin-right: 5px; /* Space between tabs */
+            margin-bottom: -1px; /* Align with bottom border */
+        }
+
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+            font-weight: bold;
+        }
+        .tab:hover {
+            color: var(--primary);
+            background-color: #f8f9fa;
+        }
+
+        .content-section { /* Default hidden for SPA behavior */
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            height: 350px; /* Default height */
+            min-height: 300px; /* Minimum height */
+            margin-bottom: 30px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            position: relative; /* For chart responsiveness */
+        }
+
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1100;
+            width: auto;
+            max-width: 350px; /* Max width for toasts */
+        }
+
+        .toast {
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transform: translateX(120%); /* Start off-screen */
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Smooth animation */
+            font-size: 14px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast-success { background-color: var(--success); }
+        .toast-error { background-color: var(--danger); }
+        .toast-warning { background-color: var(--warning); color: var(--dark); }
+        .toast-info { background-color: var(--info); }
+
+        .close-toast {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 18px;
+            cursor: pointer;
+            margin-left: 15px; /* More space for close button */
+            padding: 0;
+            line-height: 1;
+        }
+        .close-toast:hover {
+            opacity: 0.8;
+        }
+
+        /* Utility for hidden elements (used by JS) */
+        .hidden {
+            display: none !important;
+        }
+        
+        .report-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .report-controls .select-control {
+            width: auto;
+            min-width: 180px;
+        }
+
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar perspective-box">
+            <div class="logo">
+                <i class="fas fa-utensils"></i> <span>Team Heaven Inventory</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-section="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="raw-materials">
+                        <i class="fas fa-boxes"></i> <span>Raw Materials</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="recipes">
+                        <i class="fas fa-book"></i> <span>Recipes</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="purchase-orders">
+                        <i class="fas fa-shopping-cart"></i> <span>Purchase Orders</span>
+                    </a>
+                </li>
+                 <li class="nav-item"> <a href="#" class="nav-link" data-section="sales-orders">
+                        <i class="fas fa-receipt"></i> <span>Sales Orders</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="waste-management">
+                        <i class="fas fa-trash-alt"></i> <span>Waste Management</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="reports">
+                        <i class="fas fa-chart-bar"></i> <span>Reports</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="settings">
+                        <i class="fas fa-cog"></i> <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="header perspective-box">
+                <div> <a href="admin.html" title="Back to Admin Panel" class="back-button">
+                        <i class="fas fa-arrow-alt-circle-left"></i>
+                    </a>
+                    <div class="page-title" id="inventory-page-title">Dashboard</div>
+                </div>
+                <div class="user-info">
+                    <img src="https://placehold.co/40x40/6c5ce7/white?text=AU" alt="User" onerror="this.src='https://placehold.co/40x40/cccccc/333333?text=U'">
+                    <span>Admin User</span> </div>
+            </div>
+
+            <div id="dashboard" class="content-section active">
+                <div class="dashboard-cards">
+                    <div class="card fade-in" style="animation-delay: 0.1s;">
+                        <div class="card-header">
+                            <div class="card-title">Total Raw Materials</div>
+                            <div class="card-icon" style="background-color: rgba(108, 92, 231, 0.1); color: var(--primary);">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                        </div>
+                        <div class="card-value" id="total-materials">0</div>
+                        <div class="card-footer">In stock count</div>
+                    </div>
+                    <div class="card fade-in" style="animation-delay: 0.2s;">
+                        <div class="card-header">
+                            <div class="card-title">Low Stock Items</div>
+                            <div class="card-icon" style="background-color: rgba(253, 203, 110, 0.1); color: var(--warning);">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                        <div class="card-value" id="low-stock-items">0</div>
+                        <div class="card-footer">Need immediate attention</div>
+                    </div>
+                    <div class="card fade-in" style="animation-delay: 0.3s;">
+                        <div class="card-header">
+                            <div class="card-title">Active Recipes</div>
+                            <div class="card-icon" style="background-color: rgba(0, 184, 148, 0.1); color: var(--success);">
+                                <i class="fas fa-book"></i>
+                            </div>
+                        </div>
+                        <div class="card-value" id="active-recipes">0</div>
+                        <div class="card-footer">Total configured recipes</div>
+                    </div>
+                    <div class="card fade-in" style="animation-delay: 0.4s;">
+                        <div class="card-header">
+                            <div class="card-title">Pending POs</div>
+                            <div class="card-icon" style="background-color: rgba(214, 48, 49, 0.1); color: var(--danger);">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                        </div>
+                        <div class="card-value" id="pending-orders">0</div>
+                        <div class="card-footer">Awaiting delivery</div>
+                    </div>
+                </div>
+
+                <div class="chart-container perspective-box">
+                    <canvas id="inventoryChart"></canvas>
+                </div>
+
+                <div class="inventory-section perspective-box">
+                    <div class="section-header">
+                        <div class="section-title">Low Stock Alerts</div>
+                        <button class="btn btn-primary" id="generate-po-btn">
+                            <i class="fas fa-plus"></i> Generate Purchase Order
+                        </button>
+                    </div>
+                    <table id="low-stock-table">
+                        <thead>
+                            <tr>
+                                <th>Material</th>
+                                <th>Current Stock</th>
+                                <th>Threshold</th>
+                                <th>Unit</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="raw-materials" class="content-section">
+                <div class="inventory-section perspective-box">
+                    <div class="section-header">
+                        <div class="section-title">Raw Materials</div>
+                        <button class="btn btn-primary" id="add-material-btn">
+                            <i class="fas fa-plus"></i> Add Material
+                        </button>
+                    </div>
+                    <!-- START: Added Filter Controls -->
+                    <div class="filters-container">
+                        <div class="form-group">
+                            <input type="text" id="material-search-input" class="form-control" placeholder="Search by name...">
+                        </div>
+                        <div class="form-group">
+                            <select id="material-category-filter" class="select-control">
+                                <option value="">All Categories</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- END: Added Filter Controls -->
+                    <table id="materials-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Current Stock</th>
+                                <th>Unit</th>
+                                <th>Threshold</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="recipes" class="content-section">
+                <div class="inventory-section perspective-box">
+                    <div class="section-header">
+                        <div class="section-title">Recipes</div>
+                        <button class="btn btn-primary" id="add-recipe-btn">
+                            <i class="fas fa-plus"></i> Add Recipe
+                        </button>
+                    </div>
+                    <table id="recipes-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Ingredients</th>
+                                <th>Portion Size</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="purchase-orders" class="content-section">
+                <div class="tabs">
+                    <div class="tab active" data-tab="pending-po">Pending</div>
+                    <div class="tab" data-tab="completed-po">Completed</div>
+                    <div class="tab" data-tab="all-po">All Orders</div>
+                </div>
+                 <div class="filters-container">
+                    <div class="form-group">
+                        <input type="text" id="po-search" class="form-control" placeholder="Search by PO# or Vendor...">
+                    </div>
+                    <div class="form-group">
+                        <input type="date" id="po-date-start" class="form-control">
+                    </div>
+                     <div class="form-group">
+                        <input type="date" id="po-date-end" class="form-control">
+                    </div>
+                    <button class="btn btn-sm btn-danger" id="po-filter-reset">Reset</button>
+                </div>
+                
+                <div class="tab-content active" id="pending-po-tab">
+                    <div class="inventory-section perspective-box">
+                        <div class="section-header">
+                            <div class="section-title">Pending Purchase Orders</div>
+                            <div>
+                                <button class="btn btn-info" id="download-pending-po-csv"><i class="fas fa-download"></i> Download CSV</button>
+                                <button class="btn btn-primary" id="add-po-btn">
+                                    <i class="fas fa-plus"></i> Create PO
+                                </button>
+                            </div>
+                        </div>
+                        <table id="pending-po-table">
+                            <thead>
+                                <tr>
+                                    <th>PO Number</th>
+                                    <th>Vendor</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Total Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="completed-po-tab">
+                    <div class="inventory-section perspective-box">
+                        <div class="section-header">
+                            <div class="section-title">Completed Purchase Orders</div>
+                             <button class="btn btn-info" id="download-completed-po-csv"><i class="fas fa-download"></i> Download CSV</button>
+                        </div>
+                        <table id="completed-po-table">
+                             <thead>
+                                <tr>
+                                    <th>PO Number</th>
+                                    <th>Vendor</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Total Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="all-po-tab">
+                    <div class="inventory-section perspective-box">
+                        <div class="section-header">
+                            <div class="section-title">All Purchase Orders</div>
+                             <button class="btn btn-info" id="download-all-po-csv"><i class="fas fa-download"></i> Download CSV</button>
+                        </div>
+                        <table id="all-po-table">
+                            <thead>
+                                <tr>
+                                    <th>PO Number</th>
+                                    <th>Vendor</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Total Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sales-orders" class="content-section">
+                <div class="inventory-section perspective-box">
+                    <div class="section-header">
+                        <div class="section-title">Sales Orders</div>
+                        <button class="btn btn-primary" id="add-sales-order-btn">
+                            <i class="fas fa-plus"></i> Create Sales Order
+                        </button>
+                    </div>
+                    <table id="sales-orders-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Items (Recipes)</th>
+                                <th>Total Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                           <tr><td colspan="7" style="text-align:center;">Sales order functionality coming soon.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <div id="waste-management" class="content-section">
+                <div class="inventory-section perspective-box">
+                    <div class="section-header">
+                        <div class="section-title">Waste Management</div>
+                        <div>
+                            <button class="btn btn-info" id="download-waste-csv"><i class="fas fa-download"></i> Download CSV</button>
+                            <button class="btn btn-primary" id="add-waste-btn">
+                                <i class="fas fa-plus"></i> Record Waste
+                            </button>
+                        </div>
+                    </div>
+                     <div class="filters-container">
+                        <div class="form-group">
+                            <input type="text" id="waste-search" class="form-control" placeholder="Search by Material or Reason...">
+                        </div>
+                        <div class="form-group">
+                            <input type="date" id="waste-date-start" class="form-control">
+                        </div>
+                         <div class="form-group">
+                            <input type="date" id="waste-date-end" class="form-control">
+                        </div>
+                        <button class="btn btn-sm btn-danger" id="waste-filter-reset">Reset</button>
+                    </div>
+                    <table id="waste-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Material</th>
+                                <th>Quantity</th>
+                                <th>Unit</th>
+                                <th>Reason</th>
+                                <th>Recorded By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="reports" class="content-section">
+                <div class="tabs">
+                    <div class="tab active" data-tab="consumption-report">Consumption</div>
+                    <div class="tab" data-tab="inventory-report">Inventory</div>
+                    <div class="tab" data-tab="waste-report">Waste</div>
+                </div>
+                
+                <div class="tab-content active" id="consumption-report-tab">
+                    <div class="inventory-section perspective-box">
+                        <div class="section-header report-controls">
+                            <div class="section-title">Consumption Reports</div>
+                            <div class="form-group">
+                                <select id="consumption-chart-type" class="select-control">
+                                    <option value="bar" selected>Top 10 Consumed (Bar)</option>
+                                    <option value="pie">Consumption by Category (Pie)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="consumptionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="inventory-report-tab">
+                    <div class="inventory-section perspective-box">
+                        <div class="section-header report-controls">
+                            <div class="section-title">Inventory Reports</div>
+                            <div class="form-group">
+                                <select id="inventory-chart-type" class="select-control">
+                                    <option value="valueByCategory" selected>Stock Value by Category (Pie)</option>
+                                    <option value="lowStockVsThreshold">Low Stock vs. Threshold (Bar)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="inventoryReportChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="waste-report-tab">
+                    <div class="inventory-section perspective-box">
+                        <div class="section-header report-controls">
+                            <div class="section-title">Waste Reports</div>
+                            <div class="form-group">
+                                <select id="waste-chart-type" class="select-control">
+                                    <option value="byReason" selected>Waste by Reason (Doughnut)</option>
+                                    <option value="byMaterial">Top 10 Wasted Materials (Bar)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="wasteChartCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings" class="content-section">
+                <div class="inventory-section perspective-box">
+                    <div class="section-header">
+                        <div class="section-title">Settings</div>
+                    </div>
+                    <p>Settings page is under construction. Configure application preferences here.</p>
+                    <div class="form-group">
+                        <label for="settingTheme" class="form-label">Theme</label>
+                        <select id="settingTheme" class="select-control">
+                            <option value="light">Light Mode</option>
+                            <option value="dark" disabled>Dark Mode (Coming Soon)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="notificationPref" class="form-label">Email Notifications for Low Stock</label>
+                        <input type="checkbox" id="notificationPref" class="form-control" style="width:auto; height:auto;"> Enable
+                    </div>
+                </div>
+            </div>
+
+        </div> 
+    </div>
+    <div class="modal" id="genericModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Modal Title</h5>
+                <button type="button" class="close-btn" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body" id="modalFormContent">
+            </div>
+            <div class="modal-footer" id="modalFormFooter">
+            </div>
+        </div>
+    </div>
+    <div class="toast-container"></div>
+
+    <script>
+      // This configuration is a placeholder and will be replaced by the environment's configuration.
+      var __firebase_config = JSON.stringify({
+        apiKey: "AIzaSyDRjRUwS1AhTzOt6SHAl75lE9k3prHWHpA",
+        authDomain: "th3-restaurant.firebaseapp.com",
+        projectId: "th3-restaurant",
+        storageBucket: "th3-restaurant.appspot.com",
+        messagingSenderId: "1234567890",
+        appId: "1:1234567890:web:abc123",
+        databaseURL: "https://th3-restaurant.firebaseio.com"
+      });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js" defer></script>
+
+</body>
+</html>
