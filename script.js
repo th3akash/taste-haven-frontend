@@ -1734,15 +1734,31 @@ function setupTabs(tabContainerSelector) {
 // ==========================================================
 
 // --- Chart Initialization & Updates ---
+// ==========================================================
+// REPLACE this entire chart section in your script.js
+// ==========================================================
+
+// --- Chart Initialization & Updates ---
 
 function initCharts() {
-    console.log("Chart initialization (placeholder).");
-    // Example: if (document.getElementById('inventoryChart')) { inventoryChartInstance = new Chart(...); }
-    // Call update functions here if needed after initial data load or with empty data
-    updateInventoryChart();
-    updateConsumptionChart();
-    updateInventoryReportChart();
-    updateWasteChart();
+    console.log("Initializing chart instances.");
+    // Link dropdowns to their respective update functions
+    document.getElementById('consumption-chart-type')?.addEventListener('change', updateConsumptionChart);
+    document.getElementById('inventory-chart-type')?.addEventListener('change', updateInventoryReportChart);
+    document.getElementById('waste-chart-type')?.addEventListener('change', updateWasteChart);
+}
+
+function updateAllCharts() {
+    // Only redraw charts if the reports section is active to save resources
+    if (document.getElementById('reports').classList.contains('active')) {
+        updateConsumptionChart();
+        updateInventoryReportChart();
+        updateWasteChart();
+    }
+    // Update dashboard chart if it's visible
+    if (document.getElementById('dashboard').classList.contains('active')) {
+        updateInventoryChart();
+    }
 }
 
 function updateInventoryChart() {
@@ -1773,6 +1789,8 @@ function updateInventoryChart() {
         type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
     });
 }
+
+
 function updateConsumptionChart() {
     // FIXED: Using correct canvas ID 'consumptionChart' from your HTML
     const ctx = document.getElementById('consumptionChart')?.getContext('2d');
