@@ -937,53 +937,62 @@ document.getElementById('waste-filter-reset')?.addEventListener('click', () => {
         if(saveBtn) saveBtn.addEventListener('click', saveMaterial); else console.error("Save button not found in modal for edit material")
     }
 
-    async function saveMaterial() {
-        if (!isAuthReady || !userId) {
-            showToast("Error: Not authenticated. Cannot save material.", "error");
-            return;
-        }
-        const id = document.getElementById('materialIdModal').value;
-        const name = document.getElementById('materialNameModal').value.trim();
-        const stock = parseFloat(document.getElementById('materialStockModal').value);
-        const unit = document.getElementById('materialUnitModal').value.trim();
-        const threshold = parseFloat(document.getElementById('materialThresholdModal').value);
-        const category = document.getElementById('materialCategoryModal').value.trim();
-        const costPerUnit = parseFloat(document.getElementById('materialCostPerUnitModal').value) || 0;
+   // REPLACE your saveMaterial function with this DEBUGGING version
+async function saveMaterial() {
+    console.log("Attempting to save material..."); // DEBUG
 
-        if (!name || isNaN(stock) || !unit || isNaN(threshold) || stock < 0 || threshold < 0) {
-            showToast("Please fill all required fields correctly (stock/threshold cannot be negative).", "error");
-            return;
-        }
-
-        const materialData = {
-            name, stock, unit, threshold, category, costPerUnit,
-            status: stock <= threshold ? 'Low Stock' : (stock <= threshold * 1.2 ? 'Order Soon' : 'In Stock'),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        const materialsRef = getCollectionRef('rawMaterials');
-        if (!materialsRef) {
-            showToast("Error: Material storage location not found.", "error");
-            return;
-        }
-
-        try {
-            if (id) {
-                await materialsRef.doc(id).update(materialData);
-                showToast("Raw material updated successfully!", "success");
-            } else {
-                materialData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                await materialsRef.add(materialData);
-                showToast("Raw material added successfully!", "success");
-            }
-            closeGenericModal();
-        } catch (error) {
-            console.error("Error saving material:", error);
-            showToast("Error saving material: " + error.message, "error");
-        }
+    if (!isAuthReady || !userId) {
+        showToast("Error: Not authenticated. Cannot save material.", "error");
+        console.error("Save failed: Authentication not ready or userId is missing.", { isAuthReady, userId }); // DEBUG
+        return;
     }
-    window.saveMaterial = saveMaterial;
 
+    const id = document.getElementById('materialIdModal').value;
+    const name = document.getElementById('materialNameModal').value.trim();
+    // ... (the rest of the variable declarations are the same)
+    const stock = parseFloat(document.getElementById('materialStockModal').value);
+    const unit = document.getElementById('materialUnitModal').value.trim();
+    const threshold = parseFloat(document.getElementById('materialThresholdModal').value);
+    const category = document.getElementById('materialCategoryModal').value.trim();
+    const costPerUnit = parseFloat(document.getElementById('materialCostPerUnitModal').value) || 0;
+
+
+    if (!name || isNaN(stock) || !unit || isNaN(threshold)) {
+        showToast('Please fill in Name, Stock, Unit, and Threshold fields correctly.', 'error');
+        return;
+    }
+
+    const materialData = {
+        name, stock, unit, threshold, category, costPerUnit,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const materialsRef = getCollectionRef('rawMaterials');
+    if (!materialsRef) {
+        showToast("Error: Material storage location not found. This is likely an auth issue.", "error");
+        console.error("getCollectionRef('rawMaterials') returned null. Auth issue is likely."); // DEBUG
+        return;
+    }
+
+    console.log("Data to save:", materialData); // DEBUG
+    console.log("Saving to path:", materialsRef.path); // DEBUG
+
+    try {
+        if (id) {
+            await materialsRef.doc(id).update(materialData);
+            showToast("Raw material updated successfully!", "success");
+        } else {
+            materialData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            await materialsRef.add(materialData);
+            showToast("Raw material added successfully!", "success");
+        }
+        closeGenericModal();
+    } catch (error) {
+        console.error("!!! FIRESTORE SAVE FAILED !!!:", error); // DEBUG
+        showToast("CRITICAL: Failed to save to database. " + error.message, "error");
+    }
+}
+window.saveMaterial = saveMaterial; // Ensure it's globally accessible
     window.deleteMaterial = async function(id) {
         if (!isAuthReady || !userId) {
             showToast("Error: Not authenticated. Cannot delete material.", "error");
