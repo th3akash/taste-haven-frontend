@@ -335,44 +335,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Tab Functionality ---
-    function setupTabs(tabContainerSelector) {
-        const tabContainers = document.querySelectorAll(tabContainerSelector);
-        tabContainers.forEach(container => {
-            const tabs = container.querySelectorAll('.tab');
-            if (tabs.length === 0) return; // No tabs in this container
+  // ==========================================================
+// REPLACE this entire function in your script.js
+// ==========================================================
+function setupTabs(tabContainerSelector) {
+    const tabContainers = document.querySelectorAll(tabContainerSelector);
+    tabContainers.forEach(container => {
+        const tabs = container.querySelectorAll('.tab');
+        if (tabs.length === 0) return;
 
-            const tabContentParent = container.closest('.content-section') || document;
+        const tabContentParent = container.closest('.content-section') || document;
 
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    const targetTabContentId = tab.dataset.tab + '-tab'; // e.g., "pending-po-tab"
-                    const tabContents = tabContentParent.querySelectorAll('.tab-content');
-
-                    tabContents.forEach(content => {
-                        content.classList.remove('active'); // Hide all tab contents in this parent
-                        if (content.id === targetTabContentId) {
-                            content.classList.add('active'); // Show the target one
-                        }
-                    });
-
-                    // Update charts if they are in the now active tab
-                    if (tab.dataset.tab === 'consumption-report' && consumptionChartInstance) updateConsumptionChart();
-                    if (tab.dataset.tab === 'inventory-report' && inventoryReportChartInstance) updateInventoryReportChart();
-                    if (tab.dataset.tab === 'waste-report' && wasteChartInstance) updateWasteChart();
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const targetTabContentId = tab.dataset.tab + '-tab';
+                const tabContents = tabContentParent.querySelectorAll('.tab-content');
+                
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === targetTabContentId) {
+                        content.classList.add('active');
+                    }
                 });
+
+                // THIS IS THE FIX: We call updateAllCharts every time a tab is clicked
+                // to ensure the correct chart for the visible tab is drawn.
+                updateAllCharts();
             });
-            // Activate the first tab by default if not already active
-            const activeTab = container.querySelector('.tab.active');
-            if (!activeTab && tabs.length > 0) {
-                tabs[0].click();
-            } else if (activeTab) {
-                // If a tab is already active (e.g. from previous state or HTML), ensure its content is shown.
-                activeTab.click();
-            }
         });
-    }
+
+        // Activate the first tab by default if none are active
+        const activeTab = container.querySelector('.tab.active');
+        if (!activeTab && tabs.length > 0) {
+            tabs[0].click();
+        } else if (activeTab) {
+            activeTab.click();
+        }
+    });
+}
 
 
     // --- RENDER FUNCTIONS ---
@@ -1726,174 +1729,178 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Chart Initialization & Updates ---
-    // Placeholder for Chart.js functions. Ensure Chart.js is included in your HTML.
-    function initCharts() {
-        console.log("Chart initialization (placeholder).");
-        // Example: if (document.getElementById('inventoryChart')) { inventoryChartInstance = new Chart(...); }
-        // Call update functions here if needed after initial data load or with empty data
-        updateInventoryChart();
-        updateConsumptionChart();
-        updateInventoryReportChart();
-        updateWasteChart();
-    }
+// ==========================================================
+// REPLACE this entire chart section in your script.js
+// ==========================================================
 
-    function updateInventoryChart() {
-        const ctx = document.getElementById('inventoryChart')?.getContext('2d');
-        if (!ctx) return;
-        if (inventoryChartInstance) inventoryChartInstance.destroy(); // Destroy previous instance
+// --- Chart Initialization & Updates ---
 
-        const data = {
-            labels: rawMaterials.map(m => m.name),
-            datasets: [{
-                label: 'Current Stock',
-                data: rawMaterials.map(m => m.stock),
-                backgroundColor: rawMaterials.map(m => m.stock <= m.threshold ? 'rgba(255, 99, 132, 0.6)' : 'rgba(75, 192, 192, 0.6)'),
-                borderColor: rawMaterials.map(m => m.stock <= m.threshold ? 'rgba(255, 99, 132, 1)' : 'rgba(75, 192, 192, 1)'),
-                borderWidth: 1
-            }, {
-                label: 'Low Stock Threshold',
-                data: rawMaterials.map(m => m.threshold),
-                backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                borderColor: 'rgba(255, 206, 86, 1)',
-                borderWidth: 1,
-                type: 'line', // Show threshold as a line
-                fill: false,
-                tension: 0.1
-            }]
-        };
-        inventoryChartInstance = new Chart(ctx, {
-            type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-        });
-    }
+function initCharts() {
+    console.log("Chart initialization (placeholder).");
+    // Example: if (document.getElementById('inventoryChart')) { inventoryChartInstance = new Chart(...); }
+    // Call update functions here if needed after initial data load or with empty data
+    updateInventoryChart();
+    updateConsumptionChart();
+    updateInventoryReportChart();
+    updateWasteChart();
+}
 
-    function updateConsumptionChart() { /* Implement based on sales/waste data */
-         const ctx = document.getElementById('consumptionChartReport')?.getContext('2d');
-        if (!ctx) return;
-        if (consumptionChartInstance) consumptionChartInstance.destroy();
+function updateInventoryChart() {
+    const ctx = document.getElementById('inventoryChart')?.getContext('2d');
+    if (!ctx) return;
+    if (inventoryChartInstance) inventoryChartInstance.destroy(); // Destroy previous instance
 
-        // Aggregate consumption data (simplified example: total quantity of each material sold/wasted)
-        const consumptionData = {}; // { materialName: totalConsumedQuantity }
-        salesOrders.forEach(so => {
-            if (so.status === 'Completed' && so.items) {
-                so.items.forEach(item => {
-                    const recipe = recipes.find(r => r.id === item.recipeId);
-                    if (recipe && recipe.ingredients) {
-                        recipe.ingredients.forEach(ing => {
-                            const material = rawMaterials.find(m => m.id === ing.materialId);
-                            if (material) {
-                                const consumedQty = ing.quantity * item.quantity;
-                                consumptionData[material.name] = (consumptionData[material.name] || 0) + consumedQty;
-                            }
-                        });
+    const data = {
+        labels: rawMaterials.map(m => m.name),
+        datasets: [{
+            label: 'Current Stock',
+            data: rawMaterials.map(m => m.stock),
+            backgroundColor: rawMaterials.map(m => m.stock <= m.threshold ? 'rgba(255, 99, 132, 0.6)' : 'rgba(75, 192, 192, 0.6)'),
+            borderColor: rawMaterials.map(m => m.stock <= m.threshold ? 'rgba(255, 99, 132, 1)' : 'rgba(75, 192, 192, 1)'),
+            borderWidth: 1
+        }, {
+            label: 'Low Stock Threshold',
+            data: rawMaterials.map(m => m.threshold),
+            backgroundColor: 'rgba(255, 206, 86, 0.2)',
+            borderColor: 'rgba(255, 206, 86, 1)',
+            borderWidth: 1,
+            type: 'line', // Show threshold as a line
+            fill: false,
+            tension: 0.1
+        }]
+    };
+    inventoryChartInstance = new Chart(ctx, {
+        type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    });
+}
+function updateConsumptionChart() {
+    // FIXED: Using correct canvas ID 'consumptionChart' from your HTML
+    const ctx = document.getElementById('consumptionChart')?.getContext('2d');
+    if (!ctx) return;
+    if (consumptionChartInstance) consumptionChartInstance.destroy();
+
+    // Data aggregation logic (same as before)...
+    const consumptionData = {};
+    salesOrders.forEach(so => {
+      if(so.status === 'Completed' && so.items){
+        so.items.forEach(item => {
+            const recipe = recipes.find(r => r.id === item.recipeId);
+            if(recipe && recipe.ingredients){
+                recipe.ingredients.forEach(ing => {
+                    const material = rawMaterials.find(m => m.id === ing.materialId);
+                    if(material){
+                        consumptionData[material.name] = (consumptionData[material.name] || 0) + (ing.quantity * item.quantity);
                     }
                 });
             }
         });
-        wasteRecords.forEach(wr => {
-            const material = rawMaterials.find(m => m.id === wr.materialId);
-            if (material) {
-                 consumptionData[material.name] = (consumptionData[material.name] || 0) + wr.quantity;
-            }
-        });
+      }
+    });
+    const sortedConsumption = Object.entries(consumptionData).sort(([,a],[,b]) => b-a).slice(0, 10);
+    const labels = sortedConsumption.map(([name,_]) => name);
+    const dataValues = sortedConsumption.map(([_,qty]) => qty);
 
-
-        const labels = Object.keys(consumptionData);
-        const dataValues = Object.values(consumptionData);
-
-        if (labels.length === 0) {
-            // Display a message or empty chart
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear canvas
-            ctx.font = "16px Arial";
-            ctx.fillStyle = "#888";
-            ctx.textAlign = "center";
-            ctx.fillText("No consumption data available yet.", ctx.canvas.width / 2, ctx.canvas.height / 2);
-            return;
+    consumptionChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Units Consumed',
+                data: dataValues,
+                backgroundColor: 'rgba(0, 184, 148, 0.7)',
+            }]
+        },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, title: { display: true, text: 'Top 10 Most Consumed Materials' } }
         }
+    });
+}
 
+function updateInventoryReportChart() {
+    // FIXED: Using correct canvas ID 'inventoryReportChart' from your HTML
+    const ctx = document.getElementById('inventoryReportChart')?.getContext('2d');
+    if (!ctx) return;
+    if (inventoryReportChartInstance) inventoryReportChartInstance.destroy();
 
-        consumptionChartInstance = new Chart(ctx, {
+    // NEW: Logic to read the dropdown value
+    const chartType = document.getElementById('inventory-chart-type')?.value || 'valueByCategory';
+    let chartConfig;
+
+    if (chartType === 'valueByCategory') {
+        const valueByCategory = rawMaterials.reduce((acc, m) => {
+            const category = m.category || 'Uncategorized';
+            acc[category] = (acc[category] || 0) + ((m.stock || 0) * (m.costPerUnit || 0));
+            return acc;
+        }, {});
+        chartConfig = {
             type: 'pie',
             data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Material Consumption',
-                    data: dataValues,
-                    backgroundColor: labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 70%)`),
-                }]
+                labels: Object.keys(valueByCategory),
+                datasets: [{ label: 'Stock Value (₹)', data: Object.values(valueByCategory), backgroundColor: ['#6c5ce7', '#00b894', '#fdcb6e', '#0984e3', '#d63031'] }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
-        });
-    }
-
-    function updateInventoryReportChart() { /* More detailed inventory analysis */
-        const ctx = document.getElementById('inventoryValueChart')?.getContext('2d');
-        if (!ctx) return;
-        if (inventoryReportChartInstance) inventoryReportChartInstance.destroy();
-
-        const inventoryValueData = rawMaterials.map(m => ({
-            name: m.name,
-            value: (m.stock || 0) * (m.costPerUnit || 0)
-        })).filter(m => m.value > 0); // Only show items with value
-
-        if (inventoryValueData.length === 0) {
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            ctx.font = "16px Arial"; ctx.fillStyle = "#888"; ctx.textAlign = "center";
-            ctx.fillText("No inventory value data to display.", ctx.canvas.width / 2, ctx.canvas.height / 2);
-            return;
-        }
-
-
-        inventoryReportChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: inventoryValueData.map(m => m.name),
-                datasets: [{
-                    label: 'Inventory Value (₹)',
-                    data: inventoryValueData.map(m => m.value),
-                     backgroundColor: inventoryValueData.map((_, i) => `hsl(${i * (360 / inventoryValueData.length) + 60}, 60%, 65%)`),
-                }]
-            },
-             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' }, title: { display: true, text: 'Total Inventory Value by Material (₹)'} } }
-        });
-    }
-
-    function updateWasteChart() { /* Breakdown of waste by reason/material */
-        const ctx = document.getElementById('wasteReasonChart')?.getContext('2d');
-        if (!ctx) return;
-        if (wasteChartInstance) wasteChartInstance.destroy();
-
-        const wasteByReason = {}; // { reason: totalQuantityWasted }
-        wasteRecords.forEach(wr => {
-            const reason = wr.reason || "Unspecified";
-            wasteByReason[reason] = (wasteByReason[reason] || 0) + wr.quantity;
-        });
-
-        const labels = Object.keys(wasteByReason);
-        const dataValues = Object.values(wasteByReason);
-
-        if (labels.length === 0) {
-             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            ctx.font = "16px Arial"; ctx.fillStyle = "#888"; ctx.textAlign = "center";
-            ctx.fillText("No waste data recorded yet.", ctx.canvas.width / 2, ctx.canvas.height / 2);
-            return;
-        }
-
-
-        wasteChartInstance = new Chart(ctx, {
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Stock Value by Category (₹)' } } }
+        };
+    } else { // lowStockVsThreshold
+        const lowStockItems = rawMaterials.filter(m => parseFloat(m.stock) <= parseFloat(m.threshold));
+        chartConfig = {
             type: 'bar',
             data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Waste by Reason (Quantity)',
-                    data: dataValues,
-                    backgroundColor: labels.map((_, i) => `hsl(${i * (360 / labels.length) + 120}, 75%, 70%)`),
-                    borderColor: labels.map((_, i) => `hsl(${i * (360 / labels.length) + 120}, 75%, 50%)`),
-                    borderWidth: 1
-                }]
+                labels: lowStockItems.map(item => item.name),
+                datasets: [
+                    { label: 'Current Stock', data: lowStockItems.map(item => item.stock), backgroundColor: '#fdcb6e' },
+                    { label: 'Threshold', data: lowStockItems.map(item => item.threshold), backgroundColor: '#d63031' }
+                ]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false }, title: {display: true, text: 'Waste by Reason (Total Quantity)'} } }
-        });
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Low Stock Items vs. Threshold' } }, scales: { x: { stacked: false }, y: { stacked: false } } }
+        };
     }
+    inventoryReportChartInstance = new Chart(ctx, chartConfig);
+}
+
+
+function updateWasteChart() {
+    // FIXED: Using correct canvas ID 'wasteChartCanvas' from your HTML
+    const ctx = document.getElementById('wasteChartCanvas')?.getContext('2d');
+    if (!ctx) return;
+    if (wasteChartInstance) wasteChartInstance.destroy();
+
+    // NEW: Logic to read the dropdown value
+    const chartType = document.getElementById('waste-chart-type')?.value || 'byReason';
+    let chartConfig;
+
+    if (chartType === 'byReason') {
+        const wasteByReason = wasteRecords.reduce((acc, record) => {
+            const reason = record.reason || "Unspecified";
+            acc[reason] = (acc[reason] || 0) + (record.quantity || 0);
+            return acc;
+        }, {});
+        chartConfig = {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(wasteByReason),
+                datasets: [{ label: 'Waste by Reason', data: Object.values(wasteByReason), backgroundColor: ['#d63031', '#fdcb6e', '#0984e3', '#6c5ce7'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Waste by Reason' } } }
+        };
+    } else { // byMaterial
+        const wasteByMaterial = wasteRecords.reduce((acc, record) => {
+            const materialName = rawMaterials.find(m => m.id === record.materialId)?.name || 'Unknown Material';
+            acc[materialName] = (acc[materialName] || 0) + (record.quantity || 0);
+            return acc;
+        }, {});
+        const sortedWaste = Object.entries(wasteByMaterial).sort(([,a],[,b]) => b-a).slice(0, 10);
+        chartConfig = {
+            type: 'bar',
+            data: {
+                labels: sortedWaste.map(([name,_]) => name),
+                datasets: [{ label: 'Quantity Wasted', data: sortedWaste.map(([_,qty]) => qty), backgroundColor: 'rgba(214, 48, 49, 0.7)' }]
+            },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false}, title: { display: true, text: 'Top 10 Wasted Materials' } } }
+        };
+    }
+    wasteChartInstance = new Chart(ctx, chartConfig);
+}
 
     // --- START THE APP ---
     initializeFirebase(); // This will trigger auth and then data loading.
