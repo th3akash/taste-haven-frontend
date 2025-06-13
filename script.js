@@ -50,58 +50,73 @@ document.addEventListener('DOMContentLoaded', () => {
     let salesOrders = [];
     let wasteRecords = [];
 
-    // --- Firebase Initialization ---
-    async function initializeFirebase() {
-        try {
-            // Check if Firebase is already initialized (useful for HMR or multiple script loads)
-            if (!firebase.apps.length) {
-                const firebaseApp = firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore(firebaseApp);
-                auth = firebase.auth(firebaseApp);
-            } else {
-                const firebaseApp = firebase.app(); // Get default app
-                db = firebase.firestore(firebaseApp);
-                auth = firebase.auth(firebaseApp);
-            }
+ // ==========================================================
+// PASTE THIS ENTIRE FUNCTION INTO YOUR script.js FILE
+// This replaces your old initializeFirebase function completely.
+// ==========================================================
 
-            // Enable Firestore logging for debugging if needed
-            firebase.firestore.setLogLevel('debug'); // Can be 'debug', 'error', or 'silent'
-
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    if (userIdDisplay) userIdDisplay.textContent = `User ID: ${userId}`;
-                    console.log("User is signed in with UID:", userId);
-                    isAuthReady = true;
-                    loadAllDataFromFirestore();
-                } else {
-                    console.log("No user signed in. Attempting custom/anonymous sign in.");
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            console.log("Attempting sign in with custom token.");
-                            await auth.signInWithCustomToken(__initial_auth_token);
-                        } else {
-                            console.log("Attempting sign in anonymously.");
-                            await auth.signInAnonymously();
-                        }
-                    } catch (error) {
-                        console.error("Error during sign-in:", error);
-                        showToast("Authentication failed: " + error.message, "error");
-                        isAuthReady = true; // Allow app to proceed but in a non-authenticated state for UI.
-                        if (userIdDisplay) userIdDisplay.textContent = "User ID: Not Authenticated";
-                        setupInitialUI();
-                    }
-                }
-                if (isAuthReady) {
-                    setupInitialUI();
-                }
-            });
-        } catch (error) {
-            console.error("Firebase initialization error:", error);
-            showToast("Critical Error: Could not initialize Firebase. " + error.message, "error");
+async function initializeFirebase() {
+    try {
+        // --- Step 1: Fetch the configuration from your JSON file ---
+        // This is the correct way to load the config in your project structure.
+        const response = await fetch('firebaseConfig.json');
+        if (!response.ok) {
+            throw new Error('Could not load firebaseConfig.json. Please ensure the file exists in the frontend folder.');
         }
-    }
+        const firebaseConfig = await response.json();
 
+        // --- Step 2: Initialize the Firebase App ---
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.firestore();
+        auth = firebase.auth();
+
+        // --- Step 3: Handle Authentication and Admin Authorization ---
+        // This runs every time the page loads or the user's login state changes.
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // A user is logged in. Now, we must check if they are an admin.
+                console.log(`User authenticated: ${user.email}. Checking for admin privileges...`);
+
+                const adminRef = db.collection('Admins').doc(user.uid);
+                const adminDoc = await adminRef.get();
+
+                if (adminDoc.exists) {
+                    // SUCCESS: The user is a verified admin.
+                    console.log(`Admin access granted for ${user.email}.`);
+                    
+                    // Set global variables to unlock the app's features
+                    userId = user.uid;
+                    isAuthReady = true;
+
+                    // Load all data from Firestore for this admin
+                    loadAllDataFromFirestore();
+                    // Set up all UI elements and event listeners
+                    setupInitialUI();
+
+                } else {
+                    // FAILED: The user is logged in but their ID is NOT in the Admins list.
+                    console.warn(`ACCESS DENIED: ${user.email} is not an admin.`);
+                    alert('Access Denied. This account does not have administrative privileges.');
+                    
+                    // Log them out and send them away from the secure panel.
+                    await auth.signOut();
+                    window.location.href = 'login.html';
+                }
+            } else {
+                // NO USER is logged in at all. Redirect to the login page.
+                console.log("No user signed in. Redirecting to login page.");
+                window.location.href = 'login.html';
+            }
+        });
+
+    } catch (error) {
+        // This will catch critical errors like the config file not loading.
+        console.error("Critical Firebase Initialization Error:", error);
+        document.body.innerHTML = `<h1 style="color: red; text-align: center; padding: 20px;">Error: Could not initialize the application.</h1>`;
+    }
+}
     function setupInitialUI() {
         initCharts();
         setActiveSection('dashboard');
@@ -132,12 +147,15 @@ document.getElementById('waste-filter-reset')?.addEventListener('click', () => {
 
 
     // --- Firestore Collection References ---
-    const getCollectionRef = (collectionName) => {
-        if (!isAuthReady || !userId) {
-            return null;
-        }
-        return db.collection('artifacts').doc(appId).collection('users').doc(userId).collection(collectionName);
-    };
+  // --- Firestore Collection References ---
+const getCollectionRef = (collectionName) => {
+    if (!isAuthReady || !userId) {
+        return null;
+    }
+    // THIS IS THE CORRECTED PATH: It removes the device-specific 'appId'.
+    // Now, data for an admin will be the same on all devices.
+    return db.collection('users').doc(userId).collection(collectionName);
+};
 
     // --- Data Loading from Firestore ---
     function loadAllDataFromFirestore() {
