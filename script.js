@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast("Error: Firebase configuration is invalid. " + error.message, "error");
         return; // Stop execution if config is broken
     }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
 
     // --- Global Variables & Selectors ---
     const navLinks = document.querySelectorAll('.nav-link');
@@ -68,46 +67,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 auth = firebase.auth(firebaseApp);
             }
 
-
             // Enable Firestore logging for debugging if needed
             firebase.firestore.setLogLevel('debug'); // Can be 'debug', 'error', or 'silent'
 
-
             auth.onAuthStateChanged(async (user) => {
-    const storedId = localStorage.getItem('tasteHavenUserId');
+                const storedId = localStorage.getItem('tasteHavenUserId');
 
-    if (user) {
-        userId = user.uid;
-        localStorage.setItem('tasteHavenUserId', user.uid);
-    } else if (storedId) {
-        userId = storedId;
-        try {
-            const anonUser = await auth.signInAnonymously(); // re-authenticate
-            userId = anonUser.user.uid;
-            localStorage.setItem('tasteHavenUserId', userId);
+                if (user) {
+                    userId = user.uid;
+                    localStorage.setItem('tasteHavenUserId', user.uid);
+                    window.userId = userId;
+                    console.log("✅ Signed in user UID:", userId);
+                } else if (storedId) {
+                    userId = storedId;
+                    try {
+                        const anonUser = await auth.signInAnonymously();
+                        userId = anonUser.user.uid;
+                        localStorage.setItem('tasteHavenUserId', userId);
+                        window.userId = userId;
+                        console.log("✅ Anonymous user re-authenticated:", userId);
+                    } catch (error) {
+                        console.error("❌ Anonymous sign-in failed:", error);
+                        showToast("Error: Firebase login failed.", "error");
+                    }
+                } else {
+                    try {
+                        const anonUser = await auth.signInAnonymously();
+                        userId = anonUser.user.uid;
+                        localStorage.setItem('tasteHavenUserId', userId);
+                        window.userId = userId;
+                        console.log("✅ Anonymous user signed in:", userId);
+                    } catch (error) {
+                        console.error("❌ Anonymous sign-in failed:", error);
+                        showToast("Firebase anonymous login failed.", "error");
+                    }
+                }
+
+                if (userIdDisplay) userIdDisplay.textContent = `User ID: ${userId}`;
+                isAuthReady = true;
+                window.isAuthReady = true;
+                loadAllDataFromFirestore();
+                setupInitialUI();
+            });
+
         } catch (error) {
-            console.error("Anonymous sign-in failed:", error);
-            showToast("Error: Firebase login failed.", "error");
+            console.error("Error initializing Firebase:", error);
+            showToast("Error initializing Firebase: " + error.message, "error");
         }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
-    } else {
-        try {
-            const anonUser = await auth.signInAnonymously();
-            userId = anonUser.user.uid;
-            localStorage.setItem('tasteHavenUserId', userId);
-        } catch (error) {
-            console.error("Anonymous sign-in failed:", error);
-            showToast("Firebase anonymous login failed.", "error");
-        }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
     }
-
-    if (userIdDisplay) userIdDisplay.textContent = `User ID: ${userId}`;
-    isAuthReady = true;
-    loadAllDataFromFirestore();
-    setupInitialUI(); // optional safeguard
-});
-
 
     function setupInitialUI() {
         initCharts();
@@ -719,7 +726,6 @@ function setupTabs(tabContainerSelector) {
             console.error("Error saving material:", error);
             showToast("Error saving material: " + error.message, "error");
         }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
     }
 
     window.deleteMaterial = async function(id) { // id is Firestore document ID
@@ -754,7 +760,6 @@ function setupTabs(tabContainerSelector) {
                     console.error("Error deleting material:", error);
                     showToast("Error deleting material: " + error.message, "error");
                 }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
             }
         );
     };
@@ -895,7 +900,6 @@ function setupTabs(tabContainerSelector) {
             console.error("Error saving recipe:", error);
             showToast("Error saving recipe: " + error.message, "error");
         }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
     }
 
     window.deleteRecipe = async function(id) { // id is Firestore document ID
@@ -929,7 +933,6 @@ function setupTabs(tabContainerSelector) {
                     console.error("Error deleting recipe:", error);
                     showToast("Error deleting recipe: " + error.message, "error");
                 }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
             }
         );
     };
@@ -1142,7 +1145,6 @@ function setupTabs(tabContainerSelector) {
             console.error("Error saving PO:", error);
             showToast("Error saving PO: " + error.message, "error");
         }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
     }
 
     window.markPOReceived = async function(id) { // id is Firestore document ID
@@ -1184,7 +1186,6 @@ function setupTabs(tabContainerSelector) {
                 console.error("Error marking PO received:", error);
                 showToast("Error processing PO reception: " + error.message, "error");
             }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
         });
     };
 
@@ -1210,7 +1211,6 @@ function setupTabs(tabContainerSelector) {
                 console.error("Error cancelling PO:", error);
                 showToast("Error cancelling PO: " + error.message, "error");
             }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
         });
     };
 
@@ -1467,7 +1467,6 @@ function setupTabs(tabContainerSelector) {
             console.error("Error saving SO:", error);
             showToast("Error saving SO: " + error.message, "error");
         }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
     }
 
     window.completeSalesOrder = async function(id) { // id is Firestore document ID
@@ -1534,7 +1533,6 @@ function setupTabs(tabContainerSelector) {
                 console.error("Error completing Sales Order:", error);
                 showToast("Error completing SO: " + error.message, "error");
             }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
         });
     };
 
@@ -1560,7 +1558,6 @@ function setupTabs(tabContainerSelector) {
                 console.error("Error cancelling SO:", error);
                 showToast("Error cancelling SO: " + error.message, "error");
             }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
         });
     };
 
@@ -1714,7 +1711,6 @@ function setupTabs(tabContainerSelector) {
             console.error("Error saving waste record:", error);
             showToast("Error saving waste record: " + error.message, "error");
         }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
     }
 
     window.deleteWasteRecord = async function(id) { // id is Firestore document ID
@@ -1732,7 +1728,6 @@ function setupTabs(tabContainerSelector) {
                 console.error("Error deleting waste record:", error);
                 showToast("Error: " + error.message, "error");
             }
-} catch (error) { console.error('Auto-fixed missing catch block:', error); }
         }, () => {
             showToast("Deletion cancelled.", "info");
         });
