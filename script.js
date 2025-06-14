@@ -73,42 +73,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    if (userIdDisplay) userIdDisplay.textContent = `User ID: ${userId}`;
-                    console.log("User is signed in with UID:", userId);
-                    isAuthReady = true;
-                    loadAllDataFromFirestore();
-                } else {
-                    console.log("No user signed in. Attempting custom/anonymous sign in.");
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            console.log("Attempting sign in with custom token.");
-                            await auth.signInWithCustomToken(__initial_auth_token);
-                        } else {
-                            console.log("Attempting sign in anonymously.");
-                            await auth.signInAnonymously();
-                        }
-                        // onAuthStateChanged will be triggered again upon successful sign-in
-                    } catch (error) {
-                        console.error("Error during sign-in:", error);
-                        showToast("Authentication failed: " + error.message, "error");
-                        isAuthReady = true; // Allow app to proceed but in a non-authenticated state for UI.
-                        if (userIdDisplay) userIdDisplay.textContent = "User ID: Not Authenticated";
-                        // Still call initial UI setup so the page isn't blank, but data loading will fail.
-                        setupInitialUI();
-                    }
-                }
-                // Moved initial UI setup here to ensure it runs after the first auth check.
-                if (isAuthReady) { // Or just directly after auth attempt regardless of success for basic UI
-                   setupInitialUI();
-                }
-            });
+    const storedId = localStorage.getItem('tasteHavenUserId');
+
+    if (user) {
+        userId = user.uid;
+        localStorage.setItem('tasteHavenUserId', user.uid);
+    } else if (storedId) {
+        userId = storedId;
+        try {
+            const anonUser = await auth.signInAnonymously(); // re-authenticate
+            userId = anonUser.user.uid;
+            localStorage.setItem('tasteHavenUserId', userId);
         } catch (error) {
-            console.error("Firebase initialization error:", error);
-            showToast("Critical Error: Could not initialize Firebase. " + error.message, "error");
+            console.error("Anonymous sign-in failed:", error);
+            showToast("Error: Firebase login failed.", "error");
+        }
+    } else {
+        try {
+            const anonUser = await auth.signInAnonymously();
+            userId = anonUser.user.uid;
+            localStorage.setItem('tasteHavenUserId', userId);
+        } catch (error) {
+            console.error("Anonymous sign-in failed:", error);
+            showToast("Firebase anonymous login failed.", "error");
         }
     }
+
+    if (userIdDisplay) userIdDisplay.textContent = `User ID: ${userId}`;
+    isAuthReady = true;
+    loadAllDataFromFirestore();
+    setupInitialUI(); // optional safeguard
+});
+
 
     function setupInitialUI() {
         initCharts();
