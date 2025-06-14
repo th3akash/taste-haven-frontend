@@ -5,8 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let db, auth, userId;
     let isAuthReady = false; // Flag to track if auth state is resolved
 
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'inventory-app-default'; // Use provided __app_id or a default
-    let firebaseConfig;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'inventory-app-default';
+    window.appId = appId;  // ✅ This makes it available in DevTools
+
 
     // --- Firebase Configuration Handling ---
     // In this environment, Firebase config is provided via __firebase_config.
@@ -187,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    window.loadAllDataFromFirestore = loadAllDataFromFirestore;
 
 
     // --- Navigation ---
