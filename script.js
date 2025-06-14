@@ -165,11 +165,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     // This might be tricky if other parts of the code hold a reference to the old array.
                     // A safer approach is to clear and push, or reassign and ensure all consumers use the new reference.
                     // For simplicity here, we'll reassign. If issues arise, switch to clear & push.
-                    if (collInfo.name === 'rawMaterials') rawMaterials = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    else if (collInfo.name === 'recipes') recipes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    else if (collInfo.name === 'purchaseOrders') purchaseOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    else if (collInfo.name === 'salesOrders') salesOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    else if (collInfo.name === 'wasteRecords') wasteRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if (collInfo.name === 'rawMaterials') {
+                        rawMaterials.length = 0;
+                        snapshot.docs.forEach(doc => rawMaterials.push({ id: doc.id, ...doc.data() }));
+                    } else if (collInfo.name === 'recipes') {
+                        recipes.length = 0;
+                        snapshot.docs.forEach(doc => recipes.push({ id: doc.id, ...doc.data() }));
+                    } else if (collInfo.name === 'purchaseOrders') {
+                        purchaseOrders.length = 0;
+                        snapshot.docs.forEach(doc => purchaseOrders.push({ id: doc.id, ...doc.data() }));
+                    } else if (collInfo.name === 'salesOrders') {
+                        salesOrders.length = 0;
+                        snapshot.docs.forEach(doc => salesOrders.push({ id: doc.id, ...doc.data() }));
+                    } else if (collInfo.name === 'wasteRecords') {
+                        wasteRecords.length = 0;
+                        snapshot.docs.forEach(doc => wasteRecords.push({ id: doc.id, ...doc.data() }));
+                    }
 
                     console.log(`Loaded ${collInfo.name}:`, snapshot.docs.length, "items. Current local array:", eval(collInfo.name));
 
@@ -1930,4 +1941,5 @@ function updateWasteChart() {
 
     // --- START THE APP ---
     initializeFirebase(); // This will trigger auth and then data loading.
+    window.rawMaterials = rawMaterials;
 });
